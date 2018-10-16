@@ -7,7 +7,7 @@ export default class Engine {
 		this.columns = []
 		this.enemies = []
 		this.bombs = []
-		
+
 	}
 
 	get MapCellType() {
@@ -30,7 +30,7 @@ export default class Engine {
 		}
 	}
 
-	_refreshEnemy(enemy){
+	_refreshEnemy(enemy) {
 		if (this._unitInPoint(enemy)) {
 			enemy.x = Math.fround(enemy.x)
 			enemy.y = Math.fround(enemy.y)
@@ -49,8 +49,8 @@ export default class Engine {
 			if (otherCells.length > 0) {
 				var randomIndex = this._randomInt(0, otherCells.length - 1)
 				var randomCell = otherCells[randomIndex]
-				enemy.vx = randomCell.x - enemy.rX
-				enemy.vy = randomCell.y - enemy.rY
+				enemy.vx = randomCell.dX - enemy.rX
+				enemy.vy = randomCell.dY - enemy.rY
 				enemy.speed = enemy._speed || enemy.speed
 			}
 			else if (enemy.speed > 0) {
@@ -66,25 +66,25 @@ export default class Engine {
 			this._killPlayer()
 		}
 	}
-	_destroyWallAtPos(x,y){
+	_destroyWallAtPos(x, y) {
 		var wall = this.walls.find(w => w.rX == x && w.rY == y)
 		this.walls.splice(this.walls.indexOf(wall), 1)
 		this.map[y][x] = this.MapCellType.Empty
 		return wall
 	}
-	_killPlayer(){
+	_killPlayer() {
 		this.stopped = true
 		alert('Killed!')
 	}
-	_refreshPlayer(){
-		if(this._unitInPoint(this.player)){
+	_refreshPlayer() {
+		if (this._unitInPoint(this.player)) {
 			this.player.x = Math.fround(this.player.x)
 			this.player.y = Math.fround(this.player.y)
 			this.player.lastX = this.player.rX
 			this.player.lastY = this.player.rY
 			let nextCell = this._getNextUnitCell(this.player)
 
-			if((this.player.vx || this.player.vy) && nextCell.isFree){
+			if ((this.player.vx || this.player.vy) && nextCell.isFree) {
 				this.player.lastVx = this.player.vx
 				this.player.lastVy = this.player.vy
 			} else {
@@ -96,14 +96,14 @@ export default class Engine {
 		var dy = this.options.speed * this.player.lastVy
 		this.player.x += dx
 		this.player.y += dy
-		if(this._hitTestRectangle(this.door, this.player)){
+		if (this._hitTestRectangle(this.door, this.player)) {
 			alert('WIN!')
 			this.stopped = true
 		}
 	}
 
-	Refresh(){
-		if(this.stopped){
+	Refresh() {
+		if (this.stopped) {
 			return
 		}
 		this._refreshPlayer()
@@ -139,12 +139,11 @@ export default class Engine {
 			}
 		}
 	}
-	
+
 	_setUpDoor() {
 		var randomIndex = this._randomInt(0, this.walls.length - 1)
-	
-		var wall = this.walls[randomIndex]
-		this.door = this.CreateDoor(wall.x,wall.y)
+		var wall = this.walls[randomIndex] || { x: 0, y: 0 }
+		this.door = this.CreateDoor(wall.x, wall.y)
 	}
 
 	_setUpBomb() {
@@ -152,7 +151,7 @@ export default class Engine {
 		if (this.map[this.player.lastY][this.player.lastX] == this.MapCellType.Bomb) {
 			return
 		}
-		
+
 		this.map[this.player.lastY][this.player.lastX] = this.MapCellType.Bomb
 		let bomb = this.CreateBomb(this.player.lastX, this.player.lastY)
 		this._initObjectFunctions(bomb)
@@ -160,12 +159,12 @@ export default class Engine {
 		this.bombs.push(bomb)
 	}
 
-	_bombExplodeAtPos(x,y){
+	_bombExplodeAtPos(x, y) {
 		var nextBomb = this.bombs.find(b => b.rX == x && b.rY == y)
 		this._bombExplode(nextBomb)
 	}
 
-	_bombExplode(bomb){
+	_bombExplode(bomb) {
 		if (bomb.exploded) {
 			return
 		}
@@ -173,21 +172,25 @@ export default class Engine {
 		this.map[bomb.rY][bomb.rX] = this.MapCellType.Empty
 		this.bombs.splice(this.bombs.indexOf(bomb), 1)
 		this.OnBombExploded(bomb)
-		
+
 	}
-	_isPlayerNear(x,y){
+	_isPlayerNear(x, y, arr = []) {
 
-		if(x==1 && y == 1){
-			return true
-		}
-
-		if(this.map[y][x] != this.MapCellType.Empty){
+		if (arr.includes(x + '-' + y)) {
 			return false
 		}
-		return this._isPlayerNear(x + 1, y) || this._isPlayerNear(x, y + 1) || this._isPlayerNear(x - 1, y) || this._isPlayerNear(x, y - 1)		
-		
+		if (x == 1 && y == 1) {
+			return true
+		}
+		if (this.map[y][x] != this.MapCellType.Empty) {
+			return false
+		}
+		arr.push(`${x}-${y}`)
+
+		return this._isPlayerNear(x + 1, y, arr) || this._isPlayerNear(x, y + 1, arr) || this._isPlayerNear(x - 1, y, arr) || this._isPlayerNear(x, y - 1, arr)
+
 	}
-	
+
 	_fillWalls() {
 		for (let row = 1; row < this.options.height - 1; row += 1) {
 			for (let col = 1; col < this.options.width - 1; col += 1) {
@@ -203,7 +206,7 @@ export default class Engine {
 				}
 				if (Math.random() > this.options.wallsThreshold) {
 					this.map[row][col] = this.MapCellType.Wall
-					let wall = this.CreateWall(col,row)
+					let wall = this.CreateWall(col, row)
 					this._initObjectFunctions(wall)
 					this.walls.push(wall)
 				}
@@ -218,7 +221,7 @@ export default class Engine {
 	 */
 	_createColumn(x, y) {
 		this.map[y][x] = this.MapCellType.Column
-		this.columns.push(this.CreateColumn(x,y))
+		this.columns.push(this.CreateColumn(x, y))
 	}
 
 	/**
@@ -243,10 +246,10 @@ export default class Engine {
 	}
 
 	_getFreeMapIndexes() {
-		var freeIndexes = []		
+		var freeIndexes = []
 		for (let row = 0; row < this.options.height; row++) {
 			for (let col = 0; col < this.options.width; col++) {
-				if (this.map[row][col] == this.MapCellType.Empty) {
+				if (this.map[row][col] == this.MapCellType.Empty && !this._isPlayerNear(col, row)) {
 					freeIndexes.push([row, col])
 				}
 			}
@@ -264,48 +267,46 @@ export default class Engine {
 		for (let i = 0; i < this.options.enemiesCount; i++) {
 			var randomIndex = this._randomInt(0, freeIndexes.length - 1)
 
-			var y = freeIndexes[randomIndex][0]
-			var x = freeIndexes[randomIndex][1]
-			this.map[y][x] = this.MapCellType.Enemy
-			let enemy = this.CreateEnemy(x,y)
+			var row = freeIndexes[randomIndex][0]
+			var col = freeIndexes[randomIndex][1]
+			this.map[row][col] = this.MapCellType.Enemy
+			let enemy = this.CreateEnemy(col, row)
 			this._initObjectFunctions(enemy)
 			this.enemies.push(enemy)
-			
+
 		}
 	}
 
 	_getNextUnitCell(unit) {
-		var x = unit.rX ,
-			y = unit.rY ,
+		var x = unit.rX,
+			y = unit.rY,
 			cell = this.map[y + unit.vy][x + unit.vx]
-	
+
 		return {
 			cell,
-			// x: (x + unit.vx) * options.playerSize,
-			// y: (y + unit.vy) * options.playerSize,
 			dX: x + unit.vx,
 			dY: y + unit.vy,
 			isFree: !([this.MapCellType.Wall, this.MapCellType.Column, this.MapCellType.Bomb].includes(cell))
 		}
 	}
-	
-	_initObjectFunctions(obj){
+
+	_initObjectFunctions(obj) {
 		Object.defineProperties(obj, {
-			rX:{
-				get:()=> Math.fround(obj.x) / this.options.playerSize
+			rX: {
+				get: () => Math.fround(obj.x) / this.options.playerSize
 			},
-			rY:{ 
-				get:()=> Math.fround(obj.y) / this.options.playerSize
+			rY: {
+				get: () => Math.fround(obj.y) / this.options.playerSize
 			}
 		})
 	}
 	_initPlayer() {
 
 		this.player = {
-			x:1,
-			y:1,
-			lastX:1,
-			lastY:1
+			x: 1,
+			y: 1,
+			lastX: 1,
+			lastY: 1
 		}
 		this.player = this.CreatePlayer()
 
@@ -316,17 +317,17 @@ export default class Engine {
 		this.player.lastX = 1
 		this.player.lastY = 1
 		this._initObjectFunctions(this.player)
-		
+
 	}
 
 	/**
      * Initialize keyboard navigation handlers
      */
 	_initKeyboardHandlers() {
-		let left = 	this._keyboard(37),
-			up = 	this._keyboard(38),
+		let left = this._keyboard(37),
+			up = this._keyboard(38),
 			right = this._keyboard(39),
-			down = 	this._keyboard(40),
+			down = this._keyboard(40),
 			space = this._keyboard(32)
 		// Left arrow key `press` method
 		left.press = () => { this.player.vx = -1; this.player.vy = 0 }
@@ -496,28 +497,28 @@ export default class Engine {
 		}
 	}
 
-	CreatePlayer(){
+	CreatePlayer() {
 
 	}
 	// eslint-disable-next-line
-	CreateWall(x,y){
+	CreateWall(x, y) {
 
 	}
 	// eslint-disable-next-line
-	CreateColumn(x,y){
+	CreateColumn(x, y) {
 
 	}
 	// eslint-disable-next-line
-	CreateEnemy(x,y){
-		
-	}
-	// eslint-disable-next-line
-	CreateBomb(x,y){
-		
-	}
-	// eslint-disable-next-line
-	CreateDoor(x,y){
+	CreateEnemy(x, y) {
 
-	}	
+	}
+	// eslint-disable-next-line
+	CreateBomb(x, y) {
+
+	}
+	// eslint-disable-next-line
+	CreateDoor(x, y) {
+
+	}
 
 }

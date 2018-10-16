@@ -3,25 +3,25 @@ const textureAtlas = require('./GM.json')
 import textureAtlasImg from './assets/GM.png'
 import Engine from './engine'
 
-class PixiEngine extends Engine{	
+class PixiEngine extends Engine {
 	constructor(options, app) {
 		super(options)
 		this.app = app
 		this.fires = []
 	}
-	CreatePlayer(){
+	CreatePlayer() {
 		// init player
-	//  player = new PIXI.Sprite(this.textures["fpoint.png"]);
+		//  player = new PIXI.Sprite(this.textures["fpoint.png"]);
 		let player = new PIXI.Graphics()
 		player.beginFill(0x42f44e)
 		player.drawEllipse(options.playerSize / 2, options.playerSize / 2, options.playerSize / 2, options.playerSize / 2)
-		
+
 		player.x = options.playerSize
 		player.y = options.playerSize
 		this.app.stage.addChild(player)
 		return player
 	}
-	CreateWall(x,y){
+	CreateWall(x, y) {
 		let wall = new PIXI.Graphics()
 		wall.beginFill(0xf49542)
 		wall.drawRect(0, 0, options.playerSize, options.playerSize)
@@ -31,7 +31,7 @@ class PixiEngine extends Engine{
 		this.app.stage.addChild(wall)
 		return wall
 	}
-	OnBombExploded(bomb){
+	OnBombExploded(bomb) {
 		for (let index = 0; index < 4; index++) {
 			let fire = new PIXI.Graphics()
 			fire.beginFill(0xff6e00)
@@ -48,10 +48,10 @@ class PixiEngine extends Engine{
 			this.fires.push(fire)
 			this.app.stage.addChild(fire)
 		}
-	
+
 		this.app.stage.removeChild(bomb)
 	}
-	CreateColumn(x,y){
+	CreateColumn(x, y) {
 		const rectangle = new PIXI.Graphics()
 		rectangle.beginFill(0x66CCFF)
 		rectangle.drawRect(0, 0, options.playerSize, options.playerSize)
@@ -60,8 +60,8 @@ class PixiEngine extends Engine{
 		rectangle.y = y * options.playerSize
 		this.app.stage.addChild(rectangle)
 		return rectangle
-	}	
-	CreateEnemy(x,y){
+	}
+	CreateEnemy(x, y) {
 		let enemy = new PIXI.Graphics()
 		enemy.beginFill(0xf44242)
 		enemy.drawEllipse(options.playerSize / 2, options.playerSize / 2, options.playerSize / 2, options.playerSize / 2)
@@ -74,8 +74,8 @@ class PixiEngine extends Engine{
 		enemy.speed = options.playerSize / options.enemySpeedFrames
 		this.app.stage.addChild(enemy)
 		return enemy
-	}	
-	CreateBomb(x,y){
+	}
+	CreateBomb(x, y) {
 		let bomb = new PIXI.Graphics()
 		bomb.beginFill(0x000)
 		bomb.drawEllipse(options.playerSize / 2, options.playerSize / 2, options.playerSize / 2, options.playerSize / 2)
@@ -85,8 +85,8 @@ class PixiEngine extends Engine{
 		bomb.exploded = false
 		this.app.stage.addChild(bomb)
 		return bomb
-	}	
-	CreateDoor(x,y){
+	}
+	CreateDoor(x, y) {
 		var door = new PIXI.Graphics()
 		door.beginFill(0x3f0fff)
 		door.drawRect(0, 0, options.playerSize, options.playerSize)
@@ -95,9 +95,28 @@ class PixiEngine extends Engine{
 		door.endFill()
 		this.app.stage.addChildAt(door, this.app.stage.getChildIndex(this.player))
 		return door
-	}	
+	}
 
-	Refresh(){
+	Refresh() {
+
+
+		var dx1 = (this.app.view.width - this.options.margin) - (this.player.x + this.app.stage.x)
+		var dx2 = this.options.margin - (this.player.x + this.app.stage.x)
+		if (dx1 < 0) {
+			this.app.stage.x = Math.max(this.app.stage.x + dx1, this.app.view.width - this.app.stage.width)
+		}
+		if (dx2 > 0) {
+			this.app.stage.x = Math.min(0, this.app.stage.x + dx2)
+		}
+
+		var dy1 = (this.app.view.height - this.options.margin) - (this.player.y + this.app.stage.y)
+		var dy2 = this.options.margin - (this.player.y + this.app.stage.y)
+		if (dy1 < 0) {
+			this.app.stage.y = Math.max(this.app.stage.y + dy1, this.app.view.height - this.app.stage.height)
+		}
+		if (dy2 > 0) {
+			this.app.stage.y = Math.min(0, this.app.stage.y + dy2)
+		}
 		super.Refresh()
 		this._runBombExplosing()
 	}
@@ -107,11 +126,11 @@ class PixiEngine extends Engine{
 			this.app.stage.removeChild(fire)
 			this.fires.splice(this.fires.indexOf(fire), 1)
 		}.bind(this)
-	
+
 		// move every fire of bomb
 		for (let index = 0; index < this.fires.length; index++) {
 			const fire = this.fires[index]
-	
+
 			// remove fire
 			if (fire.dist == 0) {
 				removeFire(fire)
@@ -119,7 +138,7 @@ class PixiEngine extends Engine{
 				continue
 			}
 			if (this._unitInPoint(fire)) {
-	
+
 				var cell = this._getNextUnitCell(fire)
 				switch (cell.cell) {
 				// destroy wall
@@ -145,11 +164,11 @@ class PixiEngine extends Engine{
 			var edx = fire.vx * options.explodeSpeed
 			var edy = fire.vy * options.explodeSpeed
 			fire.dist = fire.dist - Math.abs(edx - edy)
-	
+
 			fire.x += edx
 			fire.y += edy
-	
-	
+
+
 			// kill enemies
 			for (let y = 0; y < this.enemies.length; y++) {
 				const enemy = this.enemies[y]
@@ -159,12 +178,12 @@ class PixiEngine extends Engine{
 					this.enemies.splice(this.enemies.indexOf(enemy), 1)
 				}
 			}
-	
+
 			// kill player
 			if (this._hitTestRectangle(fire, this.player)) {
 				this._killPlayer()
 			}
-	
+
 		}
 	}
 
@@ -174,16 +193,17 @@ class PixiEngine extends Engine{
 /**Game setup */
 const options = {
 	// dimensions
-	width: 15,
-	height: 11,
+	width: 19,
+	height: 19,
 	playerSize: 50,
 	enemiesCount: 5,
-	speedFrames: 18,
+	speedFrames: 12,
 	enemySpeedFrames: 22,
 	explodeSpeedFrames: 5,
 	bombTimer: 2000,
 	fireSize: 3,
-	wallsThreshold: 0.65
+	wallsThreshold: 0.65,
+	margin: 300
 }
 
 
@@ -197,7 +217,7 @@ let app = new PIXI.Application({
 	height: 650
 })
 
-let engine = new PixiEngine(options,app)
+let engine = new PixiEngine(options, app)
 engine.InitGame()
 
 document.body.appendChild(app.view)
