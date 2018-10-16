@@ -1,0 +1,29 @@
+{"frames": {
+
+	"fpoint.png":
+	{
+		"frame": {"x":0,"y":0,"w":50,"h":50},
+		"rotated": false,
+		"trimmed": false,
+		"spriteSourceSize": {"x":0,"y":0,"w":50,"h":50},
+		"sourceSize": {"w":50,"h":50}
+	},
+	"point.png":
+	{
+		"frame": {"x":50,"y":0,"w":50,"h":50},
+		"rotated": false,
+		"trimmed": false,
+		"spriteSourceSize": {"x":0,"y":0,"w":50,"h":50},
+		"sourceSize": {"w":50,"h":50}
+	}},
+	"meta": {
+		"app": "https://www.codeandweb.com/texturepacker",
+		"version": "1.0",
+		"image": "GM.png",
+		"format": "RGBA8888",
+		"size": {"w":100,"h":50},
+		"scale": "1",
+		"smartupdate": "$TexturePacker:SmartUpdate:72a3e6bc3d2921d285f6fb70b4d45ac5:39e9cb9b4992580129812f8b5e3b31a2:4564348052490b8d64454bd6a34c55a6$"
+	}
+	}
+	
