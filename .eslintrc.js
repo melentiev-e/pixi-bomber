@@ -12,8 +12,10 @@ module.exports = {
     "rules": {
         "indent": [
             "error",
-            "tab"
-        ],
+			"tab"
+			
+		],
+		'no-unused-vars':['warn'],
         "linebreak-style": [
             "error",
             "windows"
