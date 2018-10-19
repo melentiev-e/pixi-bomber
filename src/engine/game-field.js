@@ -4,16 +4,22 @@ export default class GameField extends Stage {
 
 	constructor(options) {
 		super(options)
-		
+
 		this.player = undefined
 		this.walls = []
 		this.columns = []
 		this.enemies = []
-		this.bombs = []	
+		this.bombs = []
+		let helpersCount = this._randomInt(1, 9)
+		this.helpers = [
+			{ count: 1, collected: [], items: [], creator: this.CreateManualBombTriggeringHelper },
+			{ count: helpersCount, collected: [], items: [], creator: this.CreateBombsCountHelper },
+			{ count: 10 - helpersCount, collected: [], items: [], creator: this.CreateBombsExplodeAreaHelper }
+		]
+
 		this._initKeyboardHandlers()
 	}
 
-	
 	get MapCellType() {
 		return {
 			Empty: 0,
@@ -34,32 +40,37 @@ export default class GameField extends Stage {
 		}
 	}
 
-
-	
-
 	/** Start new level */
-	RunLevel(level){
+	RunLevel(level) {
 		this.CleanUp()
 		this.level = level
 		this.Render()
 	}
 
 	/** Clean game stage */
-	CleanUp(){
+	CleanUp() {
 
 		this.door = undefined
 		this.player = undefined
 		this.walls = []
+		this.bombs = []
 		this.enemies = []
 		this.columns = []
 		super.CleanUp()
 	}
 
-	_onGetTheDoor(){
-		//TODO: level finish
+	_onGetTheDoor() {
+		if (this.enemies.length > 0) {
+			return false
+		}
 		this.active = false
+		this.CleanUp()
+		this.OnLevelPass()
+		return true
 	}
-	
+	OnLevelPass() {
+
+	}
 	_refreshEnemy(enemy) {
 
 		if (!this.active) {
@@ -118,7 +129,7 @@ export default class GameField extends Stage {
 			this.player.lastY = this.player.rY
 			let nextCell = this._getNextUnitCell(this.player)
 
-			
+
 			if ((this.player.vx || this.player.vy) && nextCell.isFree) {
 				this.player.lastVx = this.player.vx
 				this.player.lastVy = this.player.vy
@@ -126,17 +137,20 @@ export default class GameField extends Stage {
 				this.player.lastVx = 0
 				this.player.lastVy = 0
 			}
-			
+
 		}
 		if (this.door && this._hitTestRectangle(this.door, this.player)) {
-			this._onGetTheDoor()
+			if (this._onGetTheDoor()) {
+				return
+			}
+
 		}
 		var dx = this.options.speed * this.player.lastVx
 		var dy = this.options.speed * this.player.lastVy
 		this.player.x += dx
 		this.player.y += dy
-		
-		
+
+
 	}
 
 	Refresh() {
@@ -151,14 +165,15 @@ export default class GameField extends Stage {
 	}
 
 	_onKillPlayer() {
-		if(!this.active){
+		if (!this.active) {
 			return
 		}
 		this.active = false
+		this.CleanUp()
 		this.OnKillPlayer()
 	}
 
-	OnKillPlayer(){
+	OnKillPlayer() {
 
 	}
 
@@ -171,6 +186,8 @@ export default class GameField extends Stage {
 		this._initPlayer()
 		this._fillWalls()
 		this._setUpDoor()
+		this._setUpHelpers()
+
 		this._createEnemies()
 		super.Render()
 	}
@@ -188,9 +205,26 @@ export default class GameField extends Stage {
 		}
 	}
 
+	_setUpHelpers() {
+		let getFreeIndex = () => {
+			return this._randomInt(0, this.walls.filter((w) => !w.busy).length - 1)
+		}
+
+		for (const helperDescription of this.helpers) {
+			for (let index = 0; index < helperDescription.count; index++) {
+				var wallindex = getFreeIndex()
+				var wall = this.walls[wallindex] || { x: 0, y: 0 }
+				wall.busy = true
+				helperDescription.items.push(helperDescription.creator.call(this, wall.x, wall.y))
+			}
+		}
+	}
+
+
 	_setUpDoor() {
 		var randomIndex = this._randomInt(0, this.walls.length - 1)
 		var wall = this.walls[randomIndex] || { x: 0, y: 0 }
+		wall.busy = true
 		this.door = this.CreateDoor(wall.x, wall.y)
 	}
 
@@ -199,11 +233,19 @@ export default class GameField extends Stage {
 		if (this.map[this.player.lastY][this.player.lastX] == this.MapCellType.Bomb) {
 			return
 		}
+		if (this.bombs.length >= this.options.maxBombCount) {
+			return
+		}
 
 		this.map[this.player.lastY][this.player.lastX] = this.MapCellType.Bomb
 		let bomb = this.CreateBomb(this.player.lastX, this.player.lastY)
 		this._initObjectFunctions(bomb)
-		bomb.explodeTimer = setTimeout(() => this._bombExplode(bomb), this.options.bombTimer)
+
+
+		// bomb explode only manualy if option is set
+		if (!this.options.bombReleaseHelper) {
+			bomb.explodeTimer = setTimeout(() => this._bombExplode(bomb), this.options.bombTimer)
+		}
 		this.bombs.push(bomb)
 	}
 
@@ -375,7 +417,7 @@ export default class GameField extends Stage {
 
 
 		let arrowFunctionDown = (direction) => {
-			if(!this.active){
+			if (!this.active) {
 				return
 			}
 			switch (direction) {
@@ -383,10 +425,10 @@ export default class GameField extends Stage {
 				this.player.vx = -1; this.player.vy = 0
 				break
 			case 'up':
-				this.player.vy = -1; this.player.vx = 0 
+				this.player.vy = -1; this.player.vx = 0
 				break
 			case 'right':
-				this.player.vx = 1; this.player.vy = 0 
+				this.player.vx = 1; this.player.vy = 0
 				break
 			case 'down':
 				this.player.vy = 1; this.player.vx = 0
@@ -394,7 +436,7 @@ export default class GameField extends Stage {
 			}
 		}
 		let arrowFunctionRelease = (direction) => {
-			if(!this.active){
+			if (!this.active) {
 				return
 			}
 			switch (direction) {
@@ -413,22 +455,30 @@ export default class GameField extends Stage {
 			up = commonFunctions.keyboard(38),
 			right = commonFunctions.keyboard(39),
 			down = commonFunctions.keyboard(40),
-			space = commonFunctions.keyboard(32)
+			space = commonFunctions.keyboard(32),
+			ctrl = commonFunctions.keyboard(17)
 		// Left arrow key `press` method
 		left.press = () => { arrowFunctionDown('left') }
 		left.release = () => { arrowFunctionRelease('left') }
 		// Up
-		up.press = () => {arrowFunctionDown('up') }
+		up.press = () => { arrowFunctionDown('up') }
 		up.release = () => { arrowFunctionRelease('up') }
 		// Right
-		right.press = () => {arrowFunctionDown('right') }
-		right.release = () => {  arrowFunctionRelease('right') }
+		right.press = () => { arrowFunctionDown('right') }
+		right.release = () => { arrowFunctionRelease('right') }
 		// Down
-		down.press = () => {arrowFunctionDown('down')}
-		down.release = () => {   arrowFunctionRelease('down')}
+		down.press = () => { arrowFunctionDown('down') }
+		down.release = () => { arrowFunctionRelease('down') }
 
+		// manual bomb exploding
+		ctrl.release = () => {
+			if (!this.active || !this.options.bombReleaseHelper || this.bombs.length == 0) {
+				return
+			}
+			this._bombExplode(this.bombs[0])
+		}
 		space.release = () => {
-			if(!this.active){
+			if (!this.active) {
 				return
 			}
 			this._setUpBomb()

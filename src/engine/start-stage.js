@@ -14,10 +14,10 @@ export default class StartGameStage extends Stage{
 		this._initKeyboardHandlers()
 	}	
 	OnStart(){
-
+		
 	}
 	OnExit(){
-		this.CleanUp()
+		
 	}
 	_initKeyboardHandlers(){
 		let up = commonFunctions.keyboard(38),
@@ -38,6 +38,7 @@ export default class StartGameStage extends Stage{
 			}else{
 				this.OnExit()
 			}
+			this.CleanUp()
 		}
 	}
 }

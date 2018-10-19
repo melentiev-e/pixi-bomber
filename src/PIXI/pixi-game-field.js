@@ -6,6 +6,8 @@ export default class PixiGameField extends GameField {
 		super(options)
 		this.app = app
 		
+		
+
 		this.fires = []
 	}
 	CleanUp(){
@@ -24,7 +26,7 @@ export default class PixiGameField extends GameField {
 		// init player
 		//  player = new PIXI.Sprite(this.textures["fpoint.png"]);
 		let player = new PIXI.Graphics()
-		player.beginFill(0x42f44e)
+		player.beginFill(this.options.colors.player)
 		player.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
 
 		player.x = this.options.playerSize
@@ -34,7 +36,7 @@ export default class PixiGameField extends GameField {
 	}
 	CreateWall(x, y) {
 		let wall = new PIXI.Graphics()
-		wall.beginFill(0xf49542)
+		wall.beginFill(this.options.colors.walls)
 		wall.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
 		wall.x = x * this.options.playerSize
 		wall.y = y * this.options.playerSize
@@ -45,7 +47,7 @@ export default class PixiGameField extends GameField {
 	OnBombExploded(bomb) {
 		for (let index = 0; index < 4; index++) {
 			let fire = new PIXI.Graphics()
-			fire.beginFill(0xff6e00)
+			fire.beginFill(this.options.colors.fire)
 			fire.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
 			fire.options = this.options
 			fire.x = bomb.x
@@ -53,7 +55,7 @@ export default class PixiGameField extends GameField {
 			fire.vx = 1
 			fire.vy = 0
 			this._initObjectFunctions(fire)
-			fire.dist = this.options.playerSize * this.options.fireSize
+			fire.dist = this.options.playerSize * this.options.bombExplodeArea
 			fire.endFill()
 			this._rotateUnit(fire, index)
 			this.fires.push(fire)
@@ -64,7 +66,7 @@ export default class PixiGameField extends GameField {
 	}
 	CreateColumn(x, y) {
 		const rectangle = new PIXI.Graphics()
-		rectangle.beginFill(0x66CCFF)
+		rectangle.beginFill(this.options.colors.columns)
 		rectangle.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
 		rectangle.endFill()
 		rectangle.x = x * this.options.playerSize
@@ -74,7 +76,7 @@ export default class PixiGameField extends GameField {
 	}
 	CreateEnemy(x, y) {
 		let enemy = new PIXI.Graphics()
-		enemy.beginFill(0xf44242)
+		enemy.beginFill(this.options.colors.enemy)
 		enemy.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
 		enemy.x = x * this.options.playerSize
 		enemy.y = y * this.options.playerSize
@@ -88,7 +90,7 @@ export default class PixiGameField extends GameField {
 	}
 	CreateBomb(x, y) {
 		let bomb = new PIXI.Graphics()
-		bomb.beginFill(0x000)
+		bomb.beginFill(this.options.colors.bomb)
 		bomb.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
 		bomb.x = x * this.options.playerSize
 		bomb.y = y * this.options.playerSize
@@ -97,22 +99,70 @@ export default class PixiGameField extends GameField {
 		this.stage.addChild(bomb)
 		return bomb
 	}
+
+	CreateManualBombTriggeringHelper(x,y){
+		var c = new PIXI.Container()		
+		var door = new PIXI.Graphics()
+		door.beginFill(0xFF00A9)
+		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
+		c.x = x
+		c.y = y
+		door.endFill()
+		c.addChild(door)
+		c.addChild(new PIXI.Text('/'))
+		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
+		return c
+	}
+
+	CreateBombsCountHelper(x,y){
+		var c = new PIXI.Container()
+		var door = new PIXI.Graphics()
+		door.beginFill(0xFF00A9)
+		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
+		c.x = x
+		c.y = y
+		door.endFill()
+		c.addChild(door)
+		c.addChild(new PIXI.Text('C'))
+		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
+		return c
+	}
+	CreateBombsExplodeAreaHelper(x,y){
+		var c = new PIXI.Container()
+		var door = new PIXI.Graphics()
+		door.beginFill(0xFF00A9)
+		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
+		c.x = x
+		c.y = y
+		door.endFill()
+		c.addChild(door)
+		c.addChild(new PIXI.Text('E'))
+		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
+		return c
+	}
 	CreateDoor(x, y) {
+		var c = new PIXI.Container()
 		var door = new PIXI.Graphics()
 		door.beginFill(0x3f0fff)
 		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		door.x = x
-		door.y = y
+		c.x = x
+		c.y = y
 		door.endFill()
-		this.stage.addChildAt(door, this.stage.getChildIndex(this.player))
-		return door
+		c.addChild(door)
+		c.addChild(new PIXI.Text('D'))
+		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
+		return c
 	}
 	Render(){
 
 		this.stage = new PIXI.Container()
-		this.stage.width = this.options.width * this.options.playerSize
-		this.stage.height = this.options.height * this.options.playerSize
+
 		this.app.stage.addChild(this.stage)
+		this.background = new PIXI.Graphics()
+		this.background.beginFill(this.options.colors.background)
+		this.background.drawRect(0, 0, this.options.width * this.options.playerSize, this.options.height * this.options.playerSize)
+		this.background.endFill()
+		this.stage.addChild(this.background)
 		super.Render()
 	}
 

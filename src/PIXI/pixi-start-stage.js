@@ -25,14 +25,14 @@ export default class PixiStartGameStage extends StartGameStage {
 	Render() {
 		this.stage = new PIXI.Container()
 		this.background = new PIXI.Graphics()
-		this.background.beginFill(0x66CCFF)
+		this.background.beginFill(this.options.colors.background)
 		this.background.drawRect(0, 0, this.app.view.width, this.app.view.height)
 		this.background.endFill()
 		this.stage.addChild(this.background)
 
 		let style = new PIXI.TextStyle({
 			fontSize: 36,
-			fill: 'white'
+			fill: this.options.colors.onBackground
 		})
 
 		this.selectOptions = this.items.map(el => new PIXI.Text(el, style))
@@ -45,7 +45,7 @@ export default class PixiStartGameStage extends StartGameStage {
 		})
 
 		this.cursor = new PIXI.Graphics()
-		this.cursor.beginFill(0xffccff)
+		this.cursor.beginFill(this.options.colors.onBackground)
 		this.cursor.drawCircle(0, 0, 16)
 		this.cursor.endFill()
 		this.stage.addChild(this.cursor)
