@@ -5,18 +5,8 @@ export default class GameField extends Stage {
 	constructor(options) {
 		super(options)
 
-		this.player = undefined
-		this.walls = []
-		this.columns = []
-		this.enemies = []
-		this.bombs = []
-		let helpersCount = this._randomInt(1, 9)
-		this.helpers = [
-			{ count: 1, collected: [], items: [], creator: this.CreateManualBombTriggeringHelper },
-			{ count: helpersCount, collected: [], items: [], creator: this.CreateBombsCountHelper },
-			{ count: 10 - helpersCount, collected: [], items: [], creator: this.CreateBombsExplodeAreaHelper }
-		]
-
+		
+		this._cleanUp()
 		this._initKeyboardHandlers()
 	}
 
@@ -49,16 +39,23 @@ export default class GameField extends Stage {
 
 	/** Clean game stage */
 	CleanUp() {
-
+		this._cleanUp()
+		super.CleanUp()
+	}
+	_cleanUp(){
 		this.door = undefined
 		this.player = undefined
 		this.walls = []
-		this.bombs = []
-		this.enemies = []
 		this.columns = []
-		super.CleanUp()
+		this.enemies = []
+		this.bombs = []
+		let helpersCount = this._randomInt(1, 9)
+		this.helpers = {
+			manualBombTriggering:	{ count: 1, collected: 0, items: [], creator: this.CreateManualBombTriggeringHelper },
+			bombsCount: { count: helpersCount, collected: 0, items: [], creator: this.CreateBombsCountHelper },
+			bombsExplodeArea: { count: 10 - helpersCount, collected: 0, items: [], creator: this.CreateBombsExplodeAreaHelper }
+		}
 	}
-
 	_onGetTheDoor() {
 		if (this.enemies.length > 0) {
 			return false
@@ -106,6 +103,7 @@ export default class GameField extends Stage {
 		}
 		var edx = enemy.vx * enemy.speed
 		var edy = enemy.vy * enemy.speed
+		this.OnEnemyMoving(enemy,enemy.vx,enemy.vy)
 		enemy.x += edx
 		enemy.y += edy
 		if (this._hitTestRectangle(enemy, this.player)) {
@@ -117,10 +115,15 @@ export default class GameField extends Stage {
 	_destroyWallAtPos(x, y) {
 		var wall = this.walls.find(w => w.rX == x && w.rY == y)
 		this.walls.splice(this.walls.indexOf(wall), 1)
+		this.OnWallDestroyed(x,y)
 		this.map[y][x] = this.MapCellType.Empty
 		return wall
 	}
 
+	// eslint-disable-next-line no-unused-vars
+	OnWallDestroyed(x,y){}
+
+	/** Refresh player position on the map */
 	_refreshPlayer() {
 		if (this._unitInPoint(this.player)) {
 			this.player.x = Math.fround(this.player.x)
@@ -129,7 +132,6 @@ export default class GameField extends Stage {
 			this.player.lastY = this.player.rY
 			let nextCell = this._getNextUnitCell(this.player)
 
-
 			if ((this.player.vx || this.player.vy) && nextCell.isFree) {
 				this.player.lastVx = this.player.vx
 				this.player.lastVy = this.player.vy
@@ -137,22 +139,50 @@ export default class GameField extends Stage {
 				this.player.lastVx = 0
 				this.player.lastVy = 0
 			}
-
 		}
+
+		// check door hit
 		if (this.door && this._hitTestRectangle(this.door, this.player)) {
 			if (this._onGetTheDoor()) {
 				return
 			}
-
 		}
+
+		// check helpers hit
+		this._testGettingHelpers()
+
 		var dx = this.options.speed * this.player.lastVx
 		var dy = this.options.speed * this.player.lastVy
+
+		// on moving 
+		this.OnPlayerMoving(this.player.lastVx, this.player.lastVy)
 		this.player.x += dx
 		this.player.y += dy
+	}
+	OnGetHelper(){}
+	// eslint-disable-next-line no-unused-vars
+	OnPlayerMoving(dx,dy){}
+	// eslint-disable-next-line no-unused-vars
+	OnEnemyMoving(enemy,dx,dy){}
 
-
+	/** Check if player get a helper */
+	_testGettingHelpers(){
+		for (const key in this.helpers) {
+			let helperType = this.helpers[key]
+			for (const helper of helperType.items) {
+				if(!helper.ischecked && this._hitTestRectangle(helper, this.player)){
+					helper.ischecked = true
+					helperType.collected++
+					this.OnGetHelper(helper)
+				}
+			}
+		}
 	}
 
+
+	/**
+	 * Refresh player and enemies positon on the map
+	 */
 	Refresh() {
 		if (!this.active) {
 			return
@@ -205,17 +235,24 @@ export default class GameField extends Stage {
 		}
 	}
 
+
+	/**
+	 * Placing player helpers in free cells
+	 */
 	_setUpHelpers() {
-		let getFreeIndex = () => {
-			return this._randomInt(0, this.walls.filter((w) => !w.busy).length - 1)
+		let getFreeWall = () => {
+			var walls = this.walls.filter((w) => !w.busy)
+			return walls[this._randomInt(0, walls.length - 1)]
 		}
 
-		for (const helperDescription of this.helpers) {
+		for (const key in this.helpers) {
+			let helperDescription = this.helpers[key]
 			for (let index = 0; index < helperDescription.count; index++) {
-				var wallindex = getFreeIndex()
-				var wall = this.walls[wallindex] || { x: 0, y: 0 }
+				var wall = getFreeWall()
 				wall.busy = true
-				helperDescription.items.push(helperDescription.creator.call(this, wall.x, wall.y))
+				let helperItem = helperDescription.creator.call(this, wall.x, wall.y)
+				this._initObjectFunctions(helperItem)
+				helperDescription.items.push(helperItem)
 			}
 		}
 	}
@@ -225,7 +262,9 @@ export default class GameField extends Stage {
 		var randomIndex = this._randomInt(0, this.walls.length - 1)
 		var wall = this.walls[randomIndex] || { x: 0, y: 0 }
 		wall.busy = true
+		
 		this.door = this.CreateDoor(wall.x, wall.y)
+		this._initObjectFunctions(this.door)
 	}
 
 	_setUpBomb() {
@@ -233,7 +272,7 @@ export default class GameField extends Stage {
 		if (this.map[this.player.lastY][this.player.lastX] == this.MapCellType.Bomb) {
 			return
 		}
-		if (this.bombs.length >= this.options.maxBombCount) {
+		if (this.bombs.length >= this.options.maxBombCount + this.helpers.bombsCount.collected) {
 			return
 		}
 
@@ -243,7 +282,7 @@ export default class GameField extends Stage {
 
 
 		// bomb explode only manualy if option is set
-		if (!this.options.bombReleaseHelper) {
+		if (!this.helpers.manualBombTriggering.collected) {
 			bomb.explodeTimer = setTimeout(() => this._bombExplode(bomb), this.options.bombTimer)
 		}
 		this.bombs.push(bomb)
@@ -264,6 +303,10 @@ export default class GameField extends Stage {
 		this.OnBombExploded(bomb)
 
 	}
+
+	/**
+	 * Check if player is in neigbour cell
+	 */
 	_isPlayerNear(x, y, arr = []) {
 
 		if (arr.includes(x + '-' + y)) {
@@ -281,6 +324,9 @@ export default class GameField extends Stage {
 
 	}
 
+	/**
+	 * Create array of walls 
+	 */
 	_fillWalls() {
 		for (let row = 1; row < this.options.height - 1; row += 1) {
 			for (let col = 1; col < this.options.width - 1; col += 1) {
@@ -472,7 +518,7 @@ export default class GameField extends Stage {
 
 		// manual bomb exploding
 		ctrl.release = () => {
-			if (!this.active || !this.options.bombReleaseHelper || this.bombs.length == 0) {
+			if (!this.active || !this.helpers.manualBombTriggering.collected || this.bombs.length == 0) {
 				return
 			}
 			this._bombExplode(this.bombs[0])

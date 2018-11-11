@@ -8,25 +8,23 @@ import PixiStartStage from './PIXI/pixi-start-stage'
 import PixiGameOverStage from './PIXI/pixi-game-over-stage'
 import PixiNextLevelStage from './PIXI/pixi-next-level-stage'
 
-
 /**Game setup */
 const options = {
 	// dimensions
-	width: 15,
+	width: 17,
 	height: 13,
 	playerSize: 50,
 	enemiesCount: 1,
-	speedFrames: 12,
-	enemySpeedFrames: 22,
+	speedFrames: 22,
+	enemySpeedFrames: 40,
 	explodeSpeedFrames: 5,
 	bombTimer: 2000,
-	bombExplodeArea: 5,
-	bombReleaseHelper: true,
-	maxBombCount:3,
+	bombExplodeArea: 1,
+	maxBombCount:1,
 	wallsThreshold: 0.7,
 	margin: 300,
 	colors:{
-		background : 0xFFFFF8,
+		background : 0xf1e8da,
 		onBackground: 0x013859,
 		columns: 0x21BEDA,
 		walls: 0xC4A985,
@@ -55,11 +53,10 @@ window.engine.Launch()
 
 document.body.appendChild(app.view)
 
-
 // Init textures
-const baseTexture = new PIXI.BaseTexture.from(textureAtlasImg, null, 1)
-const spritesheet = new PIXI.Spritesheet(baseTexture, textureAtlas)
-spritesheet.parse(function () {
+const baseTexture = new PIXI.BaseTexture.from(textureAtlasImg)
+app.spritesheet = new PIXI.Spritesheet(baseTexture, textureAtlas)
+app.spritesheet.parse(function () {
 
 	app.ticker.add(() => window.engine.Refresh())
 

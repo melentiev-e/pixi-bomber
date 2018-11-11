@@ -8,8 +8,6 @@ export default class Engine {
 	 * @param {*} endStage 
 	 */
 	constructor(gameField, startStage, gameOverStage, nextLevelStage, endStage) {
-
-
 		this.GameField = gameField
 		this.GameField.OnKillPlayer = this._onKillPlayer.bind(this)
 		this.GameField.OnLevelPass = this._onLevelPass.bind(this)

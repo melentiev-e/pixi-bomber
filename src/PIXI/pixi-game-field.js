@@ -5,14 +5,10 @@ export default class PixiGameField extends GameField {
 	constructor(options, app) {
 		super(options)
 		this.app = app
-		
-		
-
 		this.fires = []
 	}
-	CleanUp(){
-		this.stage && 
-		this.stage.destroy()
+	CleanUp() {
+		this.stage && this.stage.destroy()
 		this.walls.forEach(wall => wall.destroy())
 		this.columns.forEach(column => column.destroy())
 		this.fires.forEach(fire => fire.destroy())
@@ -22,27 +18,10 @@ export default class PixiGameField extends GameField {
 		this.fires = []
 		super.CleanUp()
 	}
-	CreatePlayer() {
-		// init player
-		//  player = new PIXI.Sprite(this.textures["fpoint.png"]);
-		let player = new PIXI.Graphics()
-		player.beginFill(this.options.colors.player)
-		player.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
+	
 
-		player.x = this.options.playerSize
-		player.y = this.options.playerSize
-		this.stage.addChild(player)
-		return player
-	}
-	CreateWall(x, y) {
-		let wall = new PIXI.Graphics()
-		wall.beginFill(this.options.colors.walls)
-		wall.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		wall.x = x * this.options.playerSize
-		wall.y = y * this.options.playerSize
-		wall.endFill()
-		this.stage.addChild(wall)
-		return wall
+	OnGetHelper(helper) {
+		helper.destroy()
 	}
 	OnBombExploded(bomb) {
 		for (let index = 0; index < 4; index++) {
@@ -55,7 +34,7 @@ export default class PixiGameField extends GameField {
 			fire.vx = 1
 			fire.vy = 0
 			this._initObjectFunctions(fire)
-			fire.dist = this.options.playerSize * this.options.bombExplodeArea
+			fire.dist = this.options.playerSize * (this.options.bombExplodeArea + this.helpers.bombsExplodeArea.collected)
 			fire.endFill()
 			this._rotateUnit(fire, index)
 			this.fires.push(fire)
@@ -64,57 +43,146 @@ export default class PixiGameField extends GameField {
 
 		this.stage.removeChild(bomb)
 	}
+
+
 	CreateColumn(x, y) {
-		const rectangle = new PIXI.Graphics()
-		rectangle.beginFill(this.options.colors.columns)
-		rectangle.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		rectangle.endFill()
-		rectangle.x = x * this.options.playerSize
-		rectangle.y = y * this.options.playerSize
-		this.stage.addChild(rectangle)
-		return rectangle
+
+		var type = Math.round(Math.random()*10) % 2 ? 'a':'b'
+		let column = new PIXI.Sprite(this.app.spritesheet.textures[`stone_${type}`])
+		
+		column.x = x * this.options.playerSize
+		column.y = y * this.options.playerSize
+		this.stage.addChild(column)
+		return column
+	}
+	CreateWall(x, y) {
+		let wall =  new PIXI.Sprite(this.app.spritesheet.textures['wall'])
+		wall.x = x * this.options.playerSize
+		wall.y = y * this.options.playerSize
+		
+		this.stage.addChild(wall)
+		return wall
+	}
+
+	CreatePlayer() {
+		// init player
+
+		let container = new PIXI.Container()
+
+		let textures = this.app.spritesheet.textures
+
+		let animations = {
+			hero_left: [textures.hero_left_1, textures.hero_left_2, textures.hero_left_3, textures.hero_left_2],
+			hero_top: [textures.hero_top_1, textures.hero_top_2, textures.hero_top_3, textures.hero_top_2],
+			hero_bottom: [textures.hero_bottom_1, textures.hero_bottom_2, textures.hero_bottom_3, textures.hero_bottom_2]
+		}
+
+		
+		let player = new PIXI.Sprite(this.app.spritesheet.textures['hero_front'])
+		let toLeft = new PIXI.extras.AnimatedSprite(animations.hero_left)
+		let toRight = new PIXI.extras.AnimatedSprite(animations.hero_left)
+		toRight.scale.x = -1
+		toRight.x = 50
+		let toTop = new PIXI.extras.AnimatedSprite(animations.hero_top)
+		let toBottom = new PIXI.extras.AnimatedSprite(animations.hero_bottom)
+		let playerMoveAnimations = {
+			player,
+			toLeft,
+			toRight,
+			toBottom,
+			toTop
+		}
+
+		for (const key in playerMoveAnimations) {
+			const animation = playerMoveAnimations[key]
+			animation.visible = false
+			animation.name = key
+			animation.animationSpeed = 0.15
+			container.addChild(animation)
+		}
+		player.visible = true
+		container.x = this.options.playerSize
+		container.y = this.options.playerSize
+
+		this.stage.addChild(container)
+		return container
 	}
 	CreateEnemy(x, y) {
-		let enemy = new PIXI.Graphics()
-		enemy.beginFill(this.options.colors.enemy)
-		enemy.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
+		let enemy = new PIXI.Container()
 		enemy.x = x * this.options.playerSize
 		enemy.y = y * this.options.playerSize
-		enemy.endFill()
 		enemy.vx = 0
 		enemy.vy = 1
 		enemy.options = this.options
 		enemy.speed = this.options.playerSize / this.options.enemySpeedFrames
+
+
+		let textures = this.app.spritesheet.textures
+
+		let animations = {
+			enemy_front: [textures.enemy_front_1, textures.enemy_front_2, textures.enemy_front_3, textures.enemy_front_2],
+			enemy_left: [textures.enemy_left_1, textures.enemy_left_2, textures.enemy_left_3, textures.enemy_left_2],
+			enemy_top: [textures.enemy_top_1, textures.enemy_top_2, textures.enemy_top_3, textures.enemy_top_2],
+			enemy_bottom: [textures.enemy_bottom_1, textures.enemy_bottom_2, textures.enemy_bottom_3, textures.enemy_bottom_2],
+			enemy_right: [textures.enemy_left_1, textures.enemy_left_2, textures.enemy_left_3, textures.enemy_left_2]
+		}
+
+		let enemyMoveAnimations = {
+			front: new PIXI.extras.AnimatedSprite(animations.enemy_front),
+			left: new PIXI.extras.AnimatedSprite(animations.enemy_left),
+			top: new PIXI.extras.AnimatedSprite(animations.enemy_top),
+			bottom: new PIXI.extras.AnimatedSprite(animations.enemy_bottom),
+			right: new PIXI.extras.AnimatedSprite(animations.enemy_left)
+		}
+
+		for (const direction in enemyMoveAnimations) {
+			let animation = enemyMoveAnimations[direction]
+			animation.animationSpeed = 0.12
+			animation.name = direction
+			animation.visible = false
+			enemy.addChild(animation)
+		}
+		enemyMoveAnimations.right.scale.x = -1
+		enemyMoveAnimations.right.x = 50
+
+
+		enemyMoveAnimations.front.visible = true
+		enemyMoveAnimations.front.play()
 		this.stage.addChild(enemy)
 		return enemy
 	}
 	CreateBomb(x, y) {
-		let bomb = new PIXI.Graphics()
-		bomb.beginFill(this.options.colors.bomb)
-		bomb.drawEllipse(this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2, this.options.playerSize / 2)
+		let textures = this.app.spritesheet.textures
+		let bombAnimation = new PIXI.extras.AnimatedSprite([textures.bomb_1,textures.bomb_2,textures.bomb_3,textures.bomb_2])
+		bombAnimation.play()
+		bombAnimation.animationSpeed = 0.2
+
+		let bomb = new PIXI.Container()	
 		bomb.x = x * this.options.playerSize
-		bomb.y = y * this.options.playerSize
-		bomb.endFill()
+		bomb.y = y * this.options.playerSize	
 		bomb.exploded = false
+		bomb.addChild(bombAnimation)
 		this.stage.addChild(bomb)
 		return bomb
 	}
 
-	CreateManualBombTriggeringHelper(x,y){
-		var c = new PIXI.Container()		
+
+	//#region HELPERS 
+	CreateManualBombTriggeringHelper(x, y) {
+		var c = new PIXI.Container()
 		var door = new PIXI.Graphics()
 		door.beginFill(0xFF00A9)
 		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
 		c.x = x
 		c.y = y
 		door.endFill()
+		c.visible = false
 		c.addChild(door)
 		c.addChild(new PIXI.Text('/'))
 		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
 		return c
 	}
-
-	CreateBombsCountHelper(x,y){
+	CreateBombsCountHelper(x, y) {
 		var c = new PIXI.Container()
 		var door = new PIXI.Graphics()
 		door.beginFill(0xFF00A9)
@@ -122,18 +190,20 @@ export default class PixiGameField extends GameField {
 		c.x = x
 		c.y = y
 		door.endFill()
+		c.visible = false
 		c.addChild(door)
 		c.addChild(new PIXI.Text('C'))
 		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
 		return c
 	}
-	CreateBombsExplodeAreaHelper(x,y){
+	CreateBombsExplodeAreaHelper(x, y) {
 		var c = new PIXI.Container()
 		var door = new PIXI.Graphics()
 		door.beginFill(0xFF00A9)
 		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
 		c.x = x
 		c.y = y
+		c.visible = false
 		door.endFill()
 		c.addChild(door)
 		c.addChild(new PIXI.Text('E'))
@@ -149,11 +219,31 @@ export default class PixiGameField extends GameField {
 		c.y = y
 		door.endFill()
 		c.addChild(door)
+		c.visible = false
 		c.addChild(new PIXI.Text('D'))
 		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
 		return c
 	}
-	Render(){
+
+	OnWallDestroyed(x,y){
+		for (const key in this.helpers) {
+			if (this.helpers.hasOwnProperty(key)) {
+				const helper = this.helpers[key]
+				let helpeItem = helper.items.find( item => !item.visible && item.rX == x && item.rY == y)
+				if(helpeItem){
+					helpeItem.visible = true
+					return
+				}
+			}
+		}
+		if(this.door.rX == x && this.door.rY == y){
+			this.door.visible = true
+		}
+	}
+	//#endregion 
+
+
+	Render() {
 
 		this.stage = new PIXI.Container()
 
@@ -166,6 +256,7 @@ export default class PixiGameField extends GameField {
 		super.Render()
 	}
 
+	// Global refreshing scene
 	Refresh() {
 		if (!this.active) {
 			return
@@ -195,14 +286,60 @@ export default class PixiGameField extends GameField {
 		this._runBombExplosing()
 	}
 
+	// Change current Enemy animation
+	OnEnemyMoving(enemy, dx, dy) {
+		enemy.children.forEach(a => {
+			a.stop()
+			a.visible = false
+		})
+		let name
+		if (dx > 0) {
+			name = 'right'
+		} else if (dx < 0) {
+			name = 'left'
+		} else if (dy > 0) {
+			name = 'bottom'
+		} else if (dy < 0) {
+			name = 'top'
+		} else {
+			name = 'front'
+		}
+		let animation = enemy.getChildByName(name)
+		animation.visible = true
+		animation.play()
+	}
+
+	// Change current Player animation
+	OnPlayerMoving(dx, dy) {
+		this.player.children.forEach(a => {
+			a.stop && a.stop()
+			a.visible = false
+		})
+		
+		let name
+		if (dx > 0) {
+			name = 'toRight'
+		} else if (dx < 0) {
+			name = 'toLeft'
+		} else if (dy > 0) {
+			name = 'toBottom'
+		} else if (dy < 0) {
+			name = 'toTop'
+		} else {
+			name = 'player'
+		}
+		let animation = this.player.getChildByName(name)
+		animation.visible = true
+		animation.play && animation.play()
+	}
+
 	_runBombExplosing() {
 		let removeFire = function (fire) {
 			this.stage.removeChild(fire)
 			this.fires.splice(this.fires.indexOf(fire), 1)
 		}.bind(this)
 
-		if(!this.active)
-		{
+		if (!this.active) {
 			return
 		}
 		// move every fire of bomb
