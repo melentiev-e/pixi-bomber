@@ -7,6 +7,8 @@ export default class PixiGameField extends GameField {
 		this.app = app
 		this.fires = []
 	}
+
+	// Cleaning the level and all other objects
 	CleanUp() {
 		this.stage && this.stage.destroy()
 		this.walls.forEach(wall => wall.destroy())
@@ -18,7 +20,6 @@ export default class PixiGameField extends GameField {
 		this.fires = []
 		super.CleanUp()
 	}
-	
 
 	OnGetHelper(helper) {
 		helper.destroy()
@@ -169,60 +170,36 @@ export default class PixiGameField extends GameField {
 
 	//#region HELPERS 
 	CreateManualBombTriggeringHelper(x, y) {
-		var c = new PIXI.Container()
-		var door = new PIXI.Graphics()
-		door.beginFill(0xFF00A9)
-		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		c.x = x
-		c.y = y
-		door.endFill()
-		c.visible = false
-		c.addChild(door)
-		c.addChild(new PIXI.Text('/'))
-		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
-		return c
+		let helper = new PIXI.Sprite(this.app.spritesheet.textures['manual_trigger'])
+		helper.x = x
+		helper.y = y
+		helper.visible = false
+		this.stage.addChildAt(helper, this.stage.getChildIndex(this.player))
+		return helper
 	}
 	CreateBombsCountHelper(x, y) {
-		var c = new PIXI.Container()
-		var door = new PIXI.Graphics()
-		door.beginFill(0xFF00A9)
-		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		c.x = x
-		c.y = y
-		door.endFill()
-		c.visible = false
-		c.addChild(door)
-		c.addChild(new PIXI.Text('C'))
-		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
-		return c
+		let helper = new PIXI.Sprite(this.app.spritesheet.textures['bomb_count'])
+		helper.x = x
+		helper.y = y
+		helper.visible = false
+		this.stage.addChildAt(helper, this.stage.getChildIndex(this.player))
+		return helper
 	}
 	CreateBombsExplodeAreaHelper(x, y) {
-		var c = new PIXI.Container()
-		var door = new PIXI.Graphics()
-		door.beginFill(0xFF00A9)
-		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		c.x = x
-		c.y = y
-		c.visible = false
-		door.endFill()
-		c.addChild(door)
-		c.addChild(new PIXI.Text('E'))
-		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
-		return c
+		let helper = new PIXI.Sprite(this.app.spritesheet.textures['fire_size'])
+		helper.x = x
+		helper.y = y
+		helper.visible = false
+		this.stage.addChildAt(helper, this.stage.getChildIndex(this.player))
+		return helper
 	}
 	CreateDoor(x, y) {
-		var c = new PIXI.Container()
-		var door = new PIXI.Graphics()
-		door.beginFill(0x3f0fff)
-		door.drawRect(0, 0, this.options.playerSize, this.options.playerSize)
-		c.x = x
-		c.y = y
-		door.endFill()
-		c.addChild(door)
-		c.visible = false
-		c.addChild(new PIXI.Text('D'))
-		this.stage.addChildAt(c, this.stage.getChildIndex(this.player))
-		return c
+		let helper = new PIXI.Sprite(this.app.spritesheet.textures['door'])
+		helper.x = x
+		helper.y = y
+		helper.visible = false
+		this.stage.addChildAt(helper, this.stage.getChildIndex(this.player))
+		return helper
 	}
 
 	OnWallDestroyed(x,y){
